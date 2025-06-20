@@ -1,4 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { db } from '../lib/firebase';
+import {
+  collection,
+  addDoc,
+  getDocs,
+  updateDoc,
+  doc,
+  onSnapshot,
+  deleteDoc
+} from 'firebase/firestore';
 
 function formatDropdownText(text) {
   return text
@@ -7,16 +17,37 @@ function formatDropdownText(text) {
     .join(' ');
 }
 
-const sampleUpdates = [
-  { number: 'C1234', regDate: '2024-06-01', update: 'In progress', compDate: '', approved: false },
-  { number: 'C1235', regDate: '2024-06-02', update: 'Completed', compDate: '2024-06-03', approved: false },
+const POST_NUMBERS = [
+  'P001', 'P002', 'P003', 'P004', 'P005', 'P006', 'P007', 'P008', 'P009', 'P010'
 ];
 
 export default function ThirdPage() {
   const [showServices, setShowServices] = useState(false);
   const [showStreetLightModal, setShowStreetLightModal] = useState(false);
   const [showUpdatesModal, setShowUpdatesModal] = useState(false);
-  const [updates, setUpdates] = useState(sampleUpdates);
+  const [updates, setUpdates] = useState([]);
+  const [updatesLoading, setUpdatesLoading] = useState(false);
+  const [registering, setRegistering] = useState(false);
+  const [showEnterComplaint, setShowEnterComplaint] = useState(false);
+  const [postNumber, setPostNumber] = useState('');
+  const [registerError, setRegisterError] = useState('');
+
+  // Fetch complaints from Firestore
+  useEffect(() => {
+    setUpdatesLoading(true);
+    // Get current user info from localStorage
+    const userEmail = typeof window !== 'undefined' ? localStorage.getItem('userEmail') : '';
+    const userPhone = typeof window !== 'undefined' ? localStorage.getItem('userPhone') : '';
+    const unsub = onSnapshot(collection(db, 'complaints'), (snapshot) => {
+      setUpdates(
+        snapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .filter(row => row.email === userEmail && row.phone === userPhone)
+      );
+      setUpdatesLoading(false);
+    });
+    return () => unsub();
+  }, []);
 
   const handleServicesClick = () => {
     setShowServices(v => !v);
@@ -27,13 +58,74 @@ export default function ThirdPage() {
   const handleStreetLightClick = () => {
     setShowStreetLightModal(true);
     setShowServices(false);
+    setShowEnterComplaint(false);
+    setPostNumber('');
+    setRegisterError('');
   };
   const handleCloseModal = () => {
     setShowStreetLightModal(false);
     setShowUpdatesModal(false);
+    setShowEnterComplaint(false);
+    setPostNumber('');
+    setRegisterError('');
   };
-  const handleApprove = idx => {
-    setUpdates(upds => upds.map((u, i) => i === idx ? { ...u, approved: true } : u));
+
+  // Show input for entering complaint
+  const handleEnterComplaintClick = () => {
+    setShowEnterComplaint(true);
+    setPostNumber('');
+    setRegisterError('');
+  };
+
+  // Register a new complaint with post number
+  const handleRegisterComplaint = async (e) => {
+    e.preventDefault();
+    if (!postNumber.trim()) {
+      setRegisterError('Please enter a post number');
+      return;
+    }
+    setRegistering(true);
+    // Get user info from localStorage
+    const userEmail = typeof window !== 'undefined' ? localStorage.getItem('userEmail') : '';
+    const userPhone = typeof window !== 'undefined' ? localStorage.getItem('userPhone') : '';
+    // Get location info from localStorage
+    const selectedState = typeof window !== 'undefined' ? localStorage.getItem('selectedState') : '';
+    const selectedDistrict = typeof window !== 'undefined' ? localStorage.getItem('selectedDistrict') : '';
+    const selectedPanchayath = typeof window !== 'undefined' ? localStorage.getItem('selectedPanchayath') : '';
+    const selectedWard = typeof window !== 'undefined' ? localStorage.getItem('selectedWard') : '';
+    await addDoc(collection(db, 'complaints'), {
+      number: postNumber.trim(),
+      regDate: new Date().toISOString(),
+      update: 'Registered',
+      compDate: '',
+      approved: false,
+      email: userEmail || '',
+      phone: userPhone || '',
+      state: selectedState || '',
+      district: selectedDistrict || '',
+      panchayath: selectedPanchayath || '',
+      ward: selectedWard || ''
+    });
+    setShowEnterComplaint(false);
+    setShowStreetLightModal(false);
+    setPostNumber('');
+    setRegisterError('');
+    setRegistering(false);
+  };
+
+  // Approve a complaint
+  const handleApprove = async (id) => {
+    setUpdatesLoading(true);
+    const complaintRef = doc(db, 'complaints', id);
+    await updateDoc(complaintRef, { approved: true });
+    setUpdatesLoading(false);
+  };
+
+  // Delete a complaint
+  const handleDelete = async (id) => {
+    setUpdatesLoading(true);
+    await deleteDoc(doc(db, 'complaints', id));
+    setUpdatesLoading(false);
   };
 
   return (
@@ -71,9 +163,26 @@ export default function ThirdPage() {
           <div style={{background:'#fff',borderRadius:'18px',boxShadow:'0 4px 24px rgba(0,0,0,0.18)',padding:'28px 18px 18px 18px',width:'90%',maxWidth:'340px',display:'flex',flexDirection:'column',alignItems:'center',position:'relative'}}>
             <button onClick={handleCloseModal} style={{position:'absolute',top:10,right:14,background:'none',border:'none',fontSize:'1.5rem',color:'#888',cursor:'pointer'}}>&times;</button>
             <div style={{fontWeight:'bold',fontSize:'1.1rem',marginBottom:'18px',textAlign:'center'}}>Click any one option to register the complaint</div>
-            <button style={{width:'100%',padding:'12px 0',marginBottom:'12px',fontSize:'1rem',fontWeight:'500',background:'#f5f5f5',color:'#1db954',border:'1px solid #1db954',borderRadius:'10px',cursor:'pointer'}}>Enter Post Number</button>
+            {!showEnterComplaint ? (
+              <button style={{width:'100%',padding:'12px 0',marginBottom:'12px',fontSize:'1rem',fontWeight:'500',background:'#f5f5f5',color:'#1db954',border:'1px solid #1db954',borderRadius:'10px',cursor:'pointer'}} onClick={handleEnterComplaintClick}>Enter Complaint</button>
+            ) : (
+              <form onSubmit={handleRegisterComplaint} style={{width:'100%'}}>
+                <label style={{display:'block',marginBottom:'6px',fontWeight:'500'}}>Enter post number</label>
+                <input
+                  type="text"
+                  value={postNumber}
+                  onChange={e => setPostNumber(e.target.value)}
+                  placeholder="Enter post number"
+                  style={{width:'100%',padding:'10px',marginBottom:'12px',fontSize:'1rem',borderRadius:'8px',border:'1px solid #ccc'}}
+                  required
+                />
+                <button type="submit" style={{width:'100%',padding:'12px 0',marginBottom:'12px',fontSize:'1rem',fontWeight:'500',background:'#1db954',color:'#fff',border:'none',borderRadius:'10px',cursor:'pointer'}}>Done</button>
+                {registerError && <div style={{color:'#d32f2f',marginBottom:'8px',textAlign:'center'}}>{registerError}</div>}
+              </form>
+            )}
             <button style={{width:'100%',padding:'12px 0',marginBottom:'12px',fontSize:'1rem',fontWeight:'500',background:'#f5f5f5',color:'#1db954',border:'1px solid #1db954',borderRadius:'10px',cursor:'pointer'}}>Upload Photo (Optional)</button>
             <button style={{width:'100%',padding:'12px 0',fontSize:'1rem',fontWeight:'500',background:'#f5f5f5',color:'#1db954',border:'1px solid #1db954',borderRadius:'10px',cursor:'pointer'}}>Posts Near Me (Location)</button>
+            {registering && <div style={{marginTop:'10px',color:'#888'}}>Registering...</div>}
           </div>
         </div>
       )}
@@ -83,6 +192,7 @@ export default function ThirdPage() {
             <button onClick={handleCloseModal} style={{position:'absolute',top:10,right:14,background:'none',border:'none',fontSize:'1.5rem',color:'#888',cursor:'pointer'}}>&times;</button>
             <div style={{fontWeight:'bold',fontSize:'1.1rem',marginBottom:'18px',textAlign:'center'}}>Updates</div>
             <div style={{overflowX:'auto',width:'100%'}}>
+              {updatesLoading && <div style={{marginBottom:'10px',color:'#888'}}>Loading...</div>}
               <table style={{width:'100%',borderCollapse:'collapse',fontSize:'0.98rem'}}>
                 <thead>
                   <tr style={{background:'#f5f5f5'}}>
@@ -91,19 +201,23 @@ export default function ThirdPage() {
                     <th style={{padding:'8px',fontWeight:'bold',borderBottom:'1px solid #ddd'}}>Update</th>
                     <th style={{padding:'8px',fontWeight:'bold',borderBottom:'1px solid #ddd'}}>Completed date</th>
                     <th style={{padding:'8px',fontWeight:'bold',borderBottom:'1px solid #ddd'}}>Approval</th>
+                    <th style={{padding:'8px',fontWeight:'bold',borderBottom:'1px solid #ddd'}}>Delete</th>
                   </tr>
                 </thead>
                 <tbody>
                   {updates.map((row, idx) => (
-                    <tr key={row.number} style={{background: idx%2 ? '#fafafa' : '#fff'}}>
+                    <tr key={row.id} style={{background: idx%2 ? '#fafafa' : '#fff'}}>
                       <td style={{padding:'8px',textAlign:'center'}}>{row.number}</td>
                       <td style={{padding:'8px',textAlign:'center'}}>{row.regDate}</td>
                       <td style={{padding:'8px',textAlign:'center'}}>{row.update}</td>
                       <td style={{padding:'8px',textAlign:'center'}}>{row.compDate}</td>
                       <td style={{padding:'8px',textAlign:'center'}}>
-                        <button disabled={row.approved} onClick={()=>handleApprove(idx)} style={{padding:'6px 12px',borderRadius:'8px',border:'none',background:row.approved?'#bdbdbd':'#1db954',color:'#fff',fontWeight:'bold',cursor:row.approved?'not-allowed':'pointer'}}>
+                        <button disabled={row.approved} onClick={()=>handleApprove(row.id)} style={{padding:'6px 12px',borderRadius:'8px',border:'none',background:row.approved?'#bdbdbd':'#1db954',color:'#fff',fontWeight:'bold',cursor:row.approved?'not-allowed':'pointer'}}>
                           {row.approved ? 'Approved' : 'Approve'}
                         </button>
+                      </td>
+                      <td style={{padding:'8px',textAlign:'center'}}>
+                        <button onClick={()=>handleDelete(row.id)} style={{padding:'6px 12px',borderRadius:'8px',border:'none',background:'#d32f2f',color:'#fff',fontWeight:'bold',cursor:'pointer'}}>Delete</button>
                       </td>
                     </tr>
                   ))}

@@ -116,24 +116,33 @@ export default function Hello() {
   }
 
   // Dropdown options
-  let panchayathOptions = []
-  if (
-    (lang === 'en' && selectedDistrict === 'THIRUVANANTHAPURAM') ||
-    (lang === 'ml' && selectedDistrict === 'തിരുവനന്തപുരം')
-  ) {
-    panchayathOptions = lang === 'ml' ? PANCHAYATHS_TVM_ML : PANCHAYATHS_TVM
-  } else if (selectedDistrict) {
-    panchayathOptions = [NOT_AVAILABLE[lang]]
-  }
+  let districtOptions = [];
+  let panchayathOptions = [];
+  let wardOptions = [];
+  const isKerala = (lang === 'en' && selectedState === 'KERALA') || (lang === 'ml' && selectedState === 'കേരളം');
 
-  let wardOptions = []
-  if (
-    (lang === 'en' && selectedPanchayath === 'MANGALAPURAM') ||
-    (lang === 'ml' && selectedPanchayath === 'മംഗലപുരം')
-  ) {
-    wardOptions = lang === 'ml' ? WARDS_MANGALAPURAM_ML : WARDS_MANGALAPURAM
-  } else if (selectedPanchayath) {
-    wardOptions = [NOT_AVAILABLE[lang]]
+  if (!isKerala && selectedState) {
+    districtOptions = [NOT_AVAILABLE[lang]];
+    panchayathOptions = [NOT_AVAILABLE[lang]];
+    wardOptions = [NOT_AVAILABLE[lang]];
+  } else if (isKerala) {
+    districtOptions = lang === 'ml' ? DISTRICTS_ML : DISTRICTS;
+    if (
+      (lang === 'en' && selectedDistrict === 'THIRUVANANTHAPURAM') ||
+      (lang === 'ml' && selectedDistrict === 'തിരുവനന്തപുരം')
+    ) {
+      panchayathOptions = lang === 'ml' ? PANCHAYATHS_TVM_ML : PANCHAYATHS_TVM;
+    } else if (selectedDistrict) {
+      panchayathOptions = [NOT_AVAILABLE[lang]];
+    }
+    if (
+      (lang === 'en' && selectedPanchayath === 'MANGALAPURAM') ||
+      (lang === 'ml' && selectedPanchayath === 'മംഗലപുരം')
+    ) {
+      wardOptions = lang === 'ml' ? WARDS_MANGALAPURAM_ML : WARDS_MANGALAPURAM;
+    } else if (selectedPanchayath) {
+      wardOptions = [NOT_AVAILABLE[lang]];
+    }
   }
 
   const handleProceed = () => {
@@ -142,6 +151,13 @@ export default function Hello() {
       return;
     }
     setReminder('');
+    // Save selections to localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('selectedState', selectedState);
+      localStorage.setItem('selectedDistrict', selectedDistrict);
+      localStorage.setItem('selectedPanchayath', selectedPanchayath);
+      localStorage.setItem('selectedWard', selectedWard);
+    }
     router.push('/thirdpage');
   }
 
@@ -187,13 +203,19 @@ export default function Hello() {
           <button className={styles.selectionBtn} onClick={handleDistrictClick}>
             {selectedDistrict || getDisplay('District', 'ജില്ല')}
           </button>
-          {showDistrictDropdown && (
+          {showDistrictDropdown && districtOptions.length > 0 && (
             <div className={styles.dropdownMenu}>
-              {(lang === 'ml' ? DISTRICTS_ML : DISTRICTS).map((district, idx) => (
+              {districtOptions.map((district, idx) => (
                 <div
                   key={district}
                   className={styles.dropdownItem}
-                  onClick={() => handleDistrictSelect(DISTRICTS[idx], DISTRICTS_ML[idx])}
+                  onClick={() => {
+                    if (isKerala) {
+                      handleDistrictSelect(DISTRICTS[idx], DISTRICTS_ML[idx]);
+                    } else {
+                      handleDistrictSelect(NOT_AVAILABLE[lang], NOT_AVAILABLE[lang]);
+                    }
+                  }}
                 >
                   {district}
                 </div>
@@ -212,7 +234,13 @@ export default function Hello() {
                 <div
                   key={option}
                   className={styles.dropdownItem}
-                  onClick={() => handlePanchayathSelect(PANCHAYATHS_TVM[idx], PANCHAYATHS_TVM_ML[idx])}
+                  onClick={() => {
+                    if (isKerala && ((lang === 'en' && selectedDistrict === 'THIRUVANANTHAPURAM') || (lang === 'ml' && selectedDistrict === 'തിരുവനന്തപുരം'))) {
+                      handlePanchayathSelect(PANCHAYATHS_TVM[idx], PANCHAYATHS_TVM_ML[idx]);
+                    } else {
+                      handlePanchayathSelect(NOT_AVAILABLE[lang], NOT_AVAILABLE[lang]);
+                    }
+                  }}
                 >
                   {option}
                 </div>
@@ -231,7 +259,13 @@ export default function Hello() {
                 <div
                   key={option}
                   className={styles.dropdownItem}
-                  onClick={() => handleWardSelect(WARDS_MANGALAPURAM[idx], WARDS_MANGALAPURAM_ML[idx])}
+                  onClick={() => {
+                    if (isKerala && ((lang === 'en' && selectedPanchayath === 'MANGALAPURAM') || (lang === 'ml' && selectedPanchayath === 'മംഗലപുരം'))) {
+                      handleWardSelect(WARDS_MANGALAPURAM[idx], WARDS_MANGALAPURAM_ML[idx]);
+                    } else {
+                      handleWardSelect(NOT_AVAILABLE[lang], NOT_AVAILABLE[lang]);
+                    }
+                  }}
                 >
                   {option}
                 </div>
