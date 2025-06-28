@@ -1,53 +1,70 @@
-import React, { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabase';
 
-export default function MapView() {
+export default function UserMap() {
   const router = useRouter();
-  const { district, panchayath } = router.query;
-  const [mapUrl, setMapUrl] = useState('');
+  const [districtMap, setDistrictMap] = useState({});
+  const [selectedDistrict, setSelectedDistrict] = useState('');
+  const [selectedPanchayath, setSelectedPanchayath] = useState('');
+  const [localBodyUrl, setLocalBodyUrl] = useState('');
   const [loading, setLoading] = useState(true);
-  const [adminUsername, setAdminUsername] = useState('');
+  const [username, setUsername] = useState('');
 
   useEffect(() => {
-    async function fetchMapUrl() {
-      if (!district || !panchayath) return;
-      setLoading(true);
-      const res = await fetch('/district_localbody_mapping.json');
-      const data = await res.json();
-      const lbArr = data[district] || [];
-      const found = lbArr.find(lb => lb.LocalBody === panchayath);
-      setMapUrl(found ? found.HTMLPage : '');
-      setLoading(false);
-    }
-    fetchMapUrl();
-    fetchAdminUsername();
-  }, [district, panchayath]);
+    // Fetch district mapping data
+    fetch('/district_localbody_mapping.json')
+      .then(res => res.json())
+      .then(data => {
+        setDistrictMap(data);
+        setLoading(false);
+      })
+      .catch(error => {
+        console.error('Error loading district mapping:', error);
+        setLoading(false);
+      });
+  }, []);
 
-  async function fetchAdminUsername() {
-    let userId = '';
-    if (typeof window !== 'undefined') {
-      userId = localStorage.getItem('user_id') || '';
-    }
-    if (!userId) return;
+  useEffect(() => {
+    // Get selected district and panchayath from localStorage
+    const district = typeof window !== 'undefined' ? localStorage.getItem('selectedDistrict') : '';
+    const panchayath = typeof window !== 'undefined' ? localStorage.getItem('selectedPanchayath') : '';
+    setSelectedDistrict(district || '');
+    setSelectedPanchayath(panchayath || '');
     
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('username')
-      .eq('id', userId)
-      .eq('user_role', 'admin')
-      .single();
-    
-    if (!userError && userData) {
-      setAdminUsername(userData.username || '');
+    if (district && panchayath && districtMap[district]) {
+      const found = districtMap[district].find(lb => lb.LocalBody === panchayath);
+      setLocalBodyUrl(found ? found.HTMLPage : '');
+    } else {
+      setLocalBodyUrl('');
     }
-  }
 
-  const handleBackClick = () => {
-    router.push('/adminmap');
+    // Fetch username
+    const userId = typeof window !== 'undefined' ? localStorage.getItem('user_id') : '';
+    if (userId) {
+      fetchUsername(userId);
+    }
+  }, [districtMap]);
+
+  const fetchUsername = async (userId) => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('username')
+        .eq('id', userId)
+        .single();
+      
+      if (!error && data) {
+        setUsername(data.username);
+      }
+    } catch (error) {
+      console.error('Error fetching username:', error);
+    }
   };
 
-  const title = district && panchayath ? `${district}_${panchayath} Map` : 'Map';
+  const handleBackClick = () => {
+    router.push('/thirdpage');
+  };
 
   if (loading) {
     return (
@@ -113,7 +130,7 @@ export default function MapView() {
           color: '#666',
           fontWeight: '500'
         }}>
-          {adminUsername ? `Admin: ${adminUsername}` : 'Admin: N/A'}
+          {username ? `User: ${username}` : 'User: N/A'}
         </div>
       </div>
 
@@ -124,11 +141,11 @@ export default function MapView() {
         position: 'relative',
         background: '#f0f0f0'
       }}>
-        {mapUrl ? (
+        {localBodyUrl ? (
           <div style={{ position: 'relative', width: '100%', height: '100%' }}>
             <iframe
-              src={mapUrl}
-              title={title}
+              src={localBodyUrl}
+              title={`Map of ${selectedPanchayath}`}
               style={{
                 width: '100%',
                 height: '100%',
@@ -138,6 +155,7 @@ export default function MapView() {
               allowFullScreen
               allow="geolocation"
             />
+            {/* Note: Legend and Layers boxes are part of the external map service and cannot be removed due to browser security restrictions */}
           </div>
         ) : (
           <div style={{
@@ -163,7 +181,7 @@ export default function MapView() {
               color: '#888',
               lineHeight: '1.4'
             }}>
-              Map data not found for {panchayath}
+              Map data not found for {selectedPanchayath}
             </div>
           </div>
         )}

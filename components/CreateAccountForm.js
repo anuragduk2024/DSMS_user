@@ -17,7 +17,13 @@ export default function CreateAccountForm() {
     const res = await fetch('/api/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, username, password, phone_number: phone })
+      body: JSON.stringify({ 
+        email, 
+        username, 
+        password, 
+        phone_number: phone,
+        user_role: 'user'
+      })
     });
     const data = await res.json();
     if (!res.ok) {

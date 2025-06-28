@@ -16,6 +16,7 @@ export default function AdminPortal() {
   const [vendorLoading, setVendorLoading] = useState(false);
   const [districtMap, setDistrictMap] = useState({});
   const [adminLoading, setAdminLoading] = useState(true);
+  const [adminUsername, setAdminUsername] = useState('');
   const router = useRouter();
 
   useEffect(() => {
@@ -35,7 +36,7 @@ export default function AdminPortal() {
       }
       const { data: userData, error: userError } = await supabase
         .from('users')
-        .select('district, panchayath')
+        .select('district, panchayath, username')
         .eq('id', userId)
         .eq('user_role', 'admin')
         .single();
@@ -47,6 +48,7 @@ export default function AdminPortal() {
       }
       setVendorDistrict(userData.district || '');
       setVendorPanchayath(userData.panchayath || '');
+      setAdminUsername(userData.username || '');
       setAdminLoading(false);
     }
     fetchAdminDistrictPanchayath();
@@ -88,6 +90,15 @@ export default function AdminPortal() {
     }
   };
 
+  const handleLogout = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('user_id');
+      localStorage.removeItem('selectedDistrict');
+      localStorage.removeItem('selectedPanchayath');
+    }
+    router.push('/');
+  };
+
   const boxStyle = {
     width: '100%',
     maxWidth: '400px',
@@ -95,7 +106,7 @@ export default function AdminPortal() {
     borderRadius: '14px',
     boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
     padding: '28px 18px',
-    marginBottom: '32px',
+    marginBottom: '8px',
     textAlign: 'center',
     display: 'flex',
     flexDirection: 'column',
@@ -129,10 +140,138 @@ export default function AdminPortal() {
   };
 
   return (
-    <div style={{minHeight:'100vh',display:'flex',flexDirection:'column',alignItems:'center',background:'#f5f5f5'}}>
-      <div style={{width:'100%',display:'flex',justifyContent:'center',marginTop:'0',marginBottom:'40px'}}>
-        <div style={{background:'#1db954',padding:'18px 32px',borderRadius:'14px',boxShadow:'0 4px 24px rgba(0,0,0,0.10)'}}>
-          <h1 style={{fontSize:'1.3rem',fontWeight:'bold',color:'#fff',margin:0}}>Mangalapuram panchayath admin portal</h1>
+    <div style={{
+      minHeight:'100vh',
+      display:'flex',
+      flexDirection:'column',
+      alignItems:'center',
+      background:'#f5f5f5',
+      overflow: 'hidden',
+      width: '100%'
+    }}>
+      <div style={{width:'100%',display:'flex',justifyContent:'center',marginTop:'0',marginBottom:'16px'}}>
+        <div style={{width:'100%',maxWidth:'390px',background:'#1db954',padding:'18px 32px',borderRadius:'14px',boxShadow:'0 4px 24px rgba(0,0,0,0.10)'}}>
+          <h1 style={{fontSize:'1.3rem',fontWeight:'bold',color:'#fff',margin:0,textAlign:'center'}}>ADMIN PORTAL</h1>
+        </div>
+      </div>
+      
+      {/* Info Boxes */}
+      <div style={{
+        width: '100%',
+        maxWidth: '390px',
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: '12px',
+        margin: '0 auto 16px auto'
+      }}>
+        {/* District Box */}
+        <div style={{
+          background: '#fff',
+          borderRadius: '12px',
+          padding: '16px 12px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          textAlign: 'center'
+        }}>
+          <div style={{
+            fontSize: '0.8rem',
+            fontWeight: '600',
+            color: '#333',
+            marginBottom: '8px'
+          }}>
+            District
+          </div>
+          <div style={{
+            fontSize: '0.9rem',
+            color: '#666',
+            fontWeight: '500'
+          }}>
+            {vendorDistrict || 'Not set'}
+          </div>
+        </div>
+
+        {/* Username Box */}
+        <div style={{
+          background: '#fff',
+          borderRadius: '12px',
+          padding: '16px 12px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          textAlign: 'center'
+        }}>
+          <div style={{
+            fontSize: '0.8rem',
+            fontWeight: '600',
+            color: '#333',
+            marginBottom: '8px'
+          }}>
+            Username
+          </div>
+          <div style={{
+            fontSize: '0.9rem',
+            color: '#666',
+            fontWeight: '500'
+          }}>
+            {adminUsername || 'Not set'}
+          </div>
+        </div>
+
+        {/* Panchayath Box */}
+        <div style={{
+          background: '#fff',
+          borderRadius: '12px',
+          padding: '16px 12px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          textAlign: 'center'
+        }}>
+          <div style={{
+            fontSize: '0.8rem',
+            fontWeight: '600',
+            color: '#333',
+            marginBottom: '8px'
+          }}>
+            Panchayath
+          </div>
+          <div style={{
+            fontSize: '0.9rem',
+            color: '#666',
+            fontWeight: '500'
+          }}>
+            {vendorPanchayath || 'Not set'}
+          </div>
+        </div>
+
+        {/* Logout Box */}
+        <div style={{
+          background: '#dc3545',
+          borderRadius: '12px',
+          padding: '16px 12px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textAlign: 'center',
+          cursor: 'pointer'
+        }}
+        onClick={handleLogout}
+        onMouseOver={(e) => e.target.style.backgroundColor = '#c82333'}
+        onMouseOut={(e) => e.target.style.backgroundColor = '#dc3545'}
+        >
+          <div style={{
+            fontSize: '0.9rem',
+            fontWeight: '600',
+            color: '#fff'
+          }}>
+            Logout
+          </div>
         </div>
       </div>
       {/* Add Vendor Box */}

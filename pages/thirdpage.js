@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { useRouter } from 'next/router';
 
 function formatDropdownText(text) {
   return text
@@ -13,6 +14,7 @@ const POST_NUMBERS = [
 ];
 
 export default function ThirdPage() {
+  const router = useRouter();
   const [showServices, setShowServices] = useState(false);
   const [showStreetLightModal, setShowStreetLightModal] = useState(false);
   const [showUpdatesModal, setShowUpdatesModal] = useState(false);
@@ -35,6 +37,11 @@ export default function ThirdPage() {
   const [selectedDistrict, setSelectedDistrict] = useState('');
   const [selectedPanchayath, setSelectedPanchayath] = useState('');
   const [localBodyUrl, setLocalBodyUrl] = useState('');
+  const [username, setUsername] = useState('');
+
+  const [postNumberSuggestions, setPostNumberSuggestions] = useState([]);
+  const [allPostNumbers, setAllPostNumbers] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
 
   useEffect(() => {
     fetch('/district_localbody_mapping.json')
@@ -54,7 +61,58 @@ export default function ThirdPage() {
     } else {
       setLocalBodyUrl('');
     }
+
+    // Fetch username
+    const userId = typeof window !== 'undefined' ? localStorage.getItem('user_id') : '';
+    if (userId) {
+      fetchUsername(userId);
+    }
   }, [districtMap]);
+
+  useEffect(() => {
+    // Fetch post numbers for selected district and panchayath
+    async function fetchPostNumbers() {
+      if (!selectedDistrict || !selectedPanchayath) return;
+      const { data, error } = await supabase
+        .from('DSMS')
+        .select('post_number')
+        .eq('district', selectedDistrict)
+        .eq('panchayath', selectedPanchayath);
+      if (!error && data) {
+        setAllPostNumbers(data.map(d => d.post_number));
+      } else {
+        setAllPostNumbers([]);
+      }
+    }
+    fetchPostNumbers();
+  }, [selectedDistrict, selectedPanchayath]);
+
+  useEffect(() => {
+    if (postNumber && allPostNumbers.length > 0) {
+      const filtered = allPostNumbers.filter(pn => pn && pn.toLowerCase().includes(postNumber.toLowerCase()));
+      setPostNumberSuggestions(filtered.slice(0, 5));
+      setShowDropdown(filtered.length > 0);
+    } else {
+      setPostNumberSuggestions([]);
+      setShowDropdown(false);
+    }
+  }, [postNumber, allPostNumbers]);
+
+  const fetchUsername = async (userId) => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('username')
+        .eq('id', userId)
+        .single();
+      
+      if (!error && data) {
+        setUsername(data.username);
+      }
+    } catch (error) {
+      console.error('Error fetching username:', error);
+    }
+  };
 
   const handleServicesClick = () => {
     setShowServices(v => !v);
@@ -93,6 +151,16 @@ export default function ThirdPage() {
     setShowEnterComplaint(true);
     setPostNumber('');
     setRegisterError('');
+  };
+
+  // Navigate to map page
+  const handleMapClick = () => {
+    router.push('/usermap');
+  };
+
+  // Navigate back to hello page
+  const handleBackClick = () => {
+    router.push('/hello');
   };
 
   // Register a new complaint with post number
@@ -172,6 +240,50 @@ export default function ThirdPage() {
 
   return (
     <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'flex-start',height:'100%',width:'100%'}}>
+      {/* Back Button Box */}
+      <div style={{
+        width: '100%',
+        maxWidth: '390px',
+        background: '#fff',
+        borderRadius: '12px',
+        padding: '12px 16px',
+        margin: '8px 0',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
+      }}>
+        <button 
+          onClick={handleBackClick}
+          style={{
+            background: '#1db954',
+            color: 'white',
+            border: 'none',
+            padding: '8px 16px',
+            borderRadius: '8px',
+            fontSize: '1rem',
+            fontWeight: '500',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            transition: 'background-color 0.2s'
+          }}
+          onMouseOver={(e) => e.target.style.backgroundColor = '#16a34a'}
+          onMouseOut={(e) => e.target.style.backgroundColor = '#1db954'}
+        >
+          ← Back
+        </button>
+        
+        <div style={{
+          fontSize: '0.9rem',
+          color: '#666',
+          fontWeight: '500'
+        }}>
+          {username ? `User: ${username}` : 'User: N/A'}
+        </div>
+      </div>
+      
       <div style={{width:'100%',maxWidth:'390px',background:'#f5f5f5',borderRadius:'16px',padding:'24px',margin:'0',boxShadow:'0 2px 12px rgba(0,0,0,0.08)'}}>
         <div style={{fontWeight:'bold',fontSize:'1.3rem',marginBottom:'18px',textAlign:'center',color:'#1db954'}}>STREET LIGHT</div>
         <div style={{background:'#fff',borderRadius:'12px',padding:'18px',boxShadow:'0 1px 6px rgba(0,0,0,0.06)',textAlign:'center'}}>
@@ -181,19 +293,23 @@ export default function ThirdPage() {
         </div>
       </div>
       <div style={{width:'100%',maxWidth:'390px',background:'#fff',borderRadius:'16px',padding:'18px',margin:'18px 0 0 0',boxShadow:'0 2px 8px rgba(0,0,0,0.06)',textAlign:'center'}}>
-        <div style={{fontWeight:'500',fontSize:'1.1rem',marginBottom:'10px'}}>Local Body Map</div>
-        {localBodyUrl ? (
-          <iframe
-            src={localBodyUrl}
-            title="Local Body Map"
-            width="100%"
-            height="400"
-            style={{border:'none',borderRadius:'8px'}}
-            allowFullScreen
-          ></iframe>
-        ) : (
-          <div style={{color:'#888'}}>No map link found for the selected district and panchayath.</div>
-        )}
+        <div style={{fontWeight:'500',fontSize:'1.1rem',marginBottom:'10px'}}>Map</div>
+        <button 
+          style={{
+            width:'100%',
+            padding:'12px 0',
+            fontSize:'1rem',
+            fontWeight:'500',
+            background:'#1db954',
+            color:'#fff',
+            border:'none',
+            borderRadius:'10px',
+            cursor:'pointer'
+          }} 
+          onClick={handleMapClick}
+        >
+          Map of Your Panchayath
+        </button>
       </div>
       {/* Complaint Registration Modal */}
       {showEnterComplaint && (
@@ -201,15 +317,34 @@ export default function ThirdPage() {
           <div style={{background:'#fff',borderRadius:'18px',boxShadow:'0 4px 24px rgba(0,0,0,0.18)',padding:'28px 18px 18px 18px',width:'90%',maxWidth:'340px',display:'flex',flexDirection:'column',alignItems:'center',position:'relative'}}>
             <button onClick={handleCloseModal} style={{position:'absolute',top:10,right:14,background:'none',border:'none',fontSize:'1.5rem',color:'#888',cursor:'pointer'}}>&times;</button>
             <div style={{fontWeight:'bold',fontSize:'1.1rem',marginBottom:'18px',textAlign:'center'}}>Enter Post Number</div>
-            <form onSubmit={handleRegisterComplaint} style={{width:'100%'}}>
-              <input
-                type="text"
-                value={postNumber}
-                onChange={e => setPostNumber(e.target.value)}
-                placeholder="Enter post number"
-                style={{width:'100%',padding:'10px',marginBottom:'12px',fontSize:'1rem',borderRadius:'8px',border:'1px solid #ccc'}}
-                required
-              />
+            <form onSubmit={handleRegisterComplaint} style={{width:'100%'}} autoComplete="off">
+              <div style={{position:'relative',width:'100%'}}>
+                <input
+                  type="text"
+                  value={postNumber}
+                  onChange={e => setPostNumber(e.target.value)}
+                  onFocus={() => setShowDropdown(postNumberSuggestions.length > 0)}
+                  onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
+                  placeholder="Enter post number"
+                  style={{width:'100%',padding:'10px',marginBottom:'12px',fontSize:'1rem',borderRadius:'8px',border:'1px solid #ccc'}}
+                  required
+                />
+                {showDropdown && postNumberSuggestions.length > 0 && (
+                  <div style={{position:'absolute',top:'100%',left:0,right:0,background:'#fff',border:'1px solid #ddd',borderRadius:'0 0 8px 8px',boxShadow:'0 2px 8px rgba(0,0,0,0.08)',zIndex:10}}>
+                    {postNumberSuggestions.map((pn, idx) => (
+                      <div
+                        key={pn+idx}
+                        onMouseDown={() => { setPostNumber(pn); setShowDropdown(false); }}
+                        style={{padding:'8px 12px',cursor:'pointer',fontSize:'1rem',color:'#333',borderBottom: idx !== postNumberSuggestions.length-1 ? '1px solid #eee' : 'none'}}
+                        onMouseOver={e => e.target.style.background='#f5f5f5'}
+                        onMouseOut={e => e.target.style.background='#fff'}
+                      >
+                        {pn}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               <button type="submit" style={{width:'100%',padding:'12px 0',fontSize:'1rem',fontWeight:'500',background:'#1db954',color:'#fff',border:'none',borderRadius:'10px',cursor:'pointer'}}>Submit</button>
               {registerError && <div style={{color:'#d32f2f',marginTop:'8px',textAlign:'center'}}>{registerError}</div>}
             </form>

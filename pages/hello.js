@@ -54,25 +54,37 @@ const NOT_AVAILABLE = {
 }
 
 export default function Hello() {
-  const [lang, setLang] = useState('en')
-  const [showStateDropdown, setShowStateDropdown] = useState(false)
+  const router = useRouter();
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [loginUsername, setLoginUsername] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [lang, setLang] = useState('en');
+  const [showStateDropdown, setShowStateDropdown] = useState(false);
   const [showDistrictDropdown, setShowDistrictDropdown] = useState(false)
-  const [showPanchayathDropdown, setShowPanchayathDropdown] = useState(false)
-  const [showWardDropdown, setShowWardDropdown] = useState(false)
+  const [showPanchayathDropdown, setShowPanchayathDropdown] = useState(false);
+  const [showWardDropdown, setShowWardDropdown] = useState(false);
   const [selectedState, setSelectedState] = useState('')
   const [selectedDistrict, setSelectedDistrict] = useState('')
   const [selectedPanchayath, setSelectedPanchayath] = useState('')
   const [selectedWard, setSelectedWard] = useState('')
-  const [reminder, setReminder] = useState('')
-  const [loginUsername, setLoginUsername] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-  const [loginError, setLoginError] = useState('');
-  const [loggedIn, setLoggedIn] = useState(false);
+  const [reminder, setReminder] = useState('');
   const [districtMap, setDistrictMap] = useState({});
-  const router = useRouter();
+  const [userId, setUserId] = useState('');
+  const [username, setUsername] = useState('');
 
-  // Helper to get display value for selected option
-  const getDisplay = (en, ml) => lang === 'ml' ? ml : en;
+  useEffect(() => {
+    // Check if user is logged in
+    if (typeof window !== 'undefined') {
+      const storedUserId = localStorage.getItem('user_id');
+      if (storedUserId) {
+        setLoggedIn(true);
+        setUserId(storedUserId);
+        // Fetch username from database
+        fetchUsername(storedUserId);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     fetch('/district_localbody_mapping.json')
@@ -80,15 +92,38 @@ export default function Hello() {
       .then(data => setDistrictMap(data));
   }, []);
 
-  useEffect(() => {
-    // Check for user_id in localStorage on mount
-    if (typeof window !== 'undefined') {
-      const userId = localStorage.getItem('user_id');
-      if (userId) {
-        setLoggedIn(true);
+  const getDisplay = (en, ml) => lang === 'ml' ? ml : en;
+
+  const fetchUsername = async (userId) => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('username')
+        .eq('id', userId)
+        .single();
+      
+      if (!error && data) {
+        setUsername(data.username);
       }
+    } catch (error) {
+      console.error('Error fetching username:', error);
     }
-  }, []);
+  };
+
+  const handleLogout = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('user_id');
+      localStorage.removeItem('selectedDistrict');
+      localStorage.removeItem('selectedPanchayath');
+    }
+    setLoggedIn(false);
+    setLoginUsername('');
+    setLoginPassword('');
+    setLoginError('');
+    setUserId('');
+    setUsername('');
+    router.push('/');
+  };
 
   const districtOptions = Object.keys(districtMap);
   const panchayathOptions = selectedDistrict && districtMap[selectedDistrict]
@@ -221,21 +256,69 @@ export default function Hello() {
   return (
     <div className={styles.dashboardContainer}>
       <div className={styles.dashboardHeader}>{getDisplay('DASHBOARD', 'ഡാഷ്ബോർഡ്')}</div>
-      <div style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'flex-end',padding:'0 18px 10px 0',gap:'10px'}}>
-        <button className={styles.contactBtn}>{lang === 'ml' ? 'ബന്ധപ്പെടുക' : 'Contact'}</button>
-        <label htmlFor="languageSelect">{getDisplay('Language:', 'ഭാഷ:')}</label>
-        <select
-          id="languageSelect"
-          className={styles.languageSelect}
-          value={lang}
-          onChange={e => setLang(e.target.value)}
+      
+      {/* User ID and Logout Section */}
+      <div style={{
+        width: '100%',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '12px 18px',
+        background: '#f8f9fa',
+        borderBottom: '1px solid #e9ecef'
+      }}>
+        {/* User ID Box */}
+        <div style={{
+          background: 'white',
+          padding: '8px 12px',
+          borderRadius: '6px',
+          border: '1px solid #dee2e6',
+          fontSize: '0.875rem',
+          color: '#495057',
+          fontWeight: '500'
+        }}>
+          Username: {username || 'N/A'}
+        </div>
+        
+        {/* Logout Switch */}
+        <button 
+          onClick={handleLogout}
+          style={{
+            background: '#dc3545',
+            color: 'white',
+            border: 'none',
+            padding: '8px 16px',
+            borderRadius: '6px',
+            fontSize: '0.875rem',
+            fontWeight: '500',
+            cursor: 'pointer',
+            transition: 'background-color 0.2s'
+          }}
+          onMouseOver={(e) => e.target.style.backgroundColor = '#c82333'}
+          onMouseOut={(e) => e.target.style.backgroundColor = '#dc3545'}
         >
-          <option value="en">English</option>
-          <option value="ml">Malayalam</option>
-        </select>
+          Logout
+        </button>
       </div>
+      
       <img src="/pic/icon6.png" alt="icon6" className={styles.dashboardIcon} />
       <div className={styles.selectionOptions}>
+        {/* Choose Options Text Box */}
+        <div style={{
+          width: '100%',
+          padding: '12px',
+          marginBottom: '16px',
+          backgroundColor: '#1db954',
+          border: '1px solid #1db954',
+          borderRadius: '8px',
+          textAlign: 'center',
+          fontSize: '1rem',
+          fontWeight: '500',
+          color: 'white'
+        }}>
+          {lang === 'ml' ? 'ഓപ്ഷനുകൾ തിരഞ്ഞെടുക്കുക' : 'Choose Options'}
+        </div>
+        
         {/* District Button and Dropdown */}
         <div className={styles.dropdownWrapper}>
           <button className={styles.selectionBtn} onClick={handleDistrictClick}>

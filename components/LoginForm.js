@@ -54,23 +54,103 @@ export default function LoginForm() {
 
   if (!role) {
     return (
-      <div className="flex flex-col min-h-screen justify-center items-center">
-        <h2 className="text-3xl font-bold mb-10 text-center">Select Role</h2>
-        <div className="flex flex-col gap-8 w-full max-w-xs items-center justify-center">
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: '100%',
+        height: '100%',
+        padding: '16px 0'
+      }}>
+        <h2 style={{
+          fontSize: '1.5rem',
+          fontWeight: 'bold',
+          marginBottom: '20px',
+          textAlign: 'center',
+          color: '#059669'
+        }}>Select Role</h2>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
+          width: '100%',
+          maxWidth: '280px'
+        }}>
           <button
-            className="w-full bg-green-100 hover:bg-green-200 text-green-800 font-semibold py-8 rounded-xl shadow-lg text-2xl transition duration-200 focus:outline-none border-2 border-green-300 hover:border-green-500"
+            style={{
+              width: '100%',
+              backgroundColor: '#dcfce7',
+              color: '#166534',
+              fontWeight: '600',
+              padding: '24px 16px',
+              borderRadius: '8px',
+              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+              fontSize: '1.25rem',
+              transition: 'all 0.2s',
+              border: '2px solid #86efac',
+              cursor: 'pointer'
+            }}
+            onMouseOver={(e) => {
+              e.target.style.backgroundColor = '#bbf7d0';
+              e.target.style.borderColor = '#22c55e';
+            }}
+            onMouseOut={(e) => {
+              e.target.style.backgroundColor = '#dcfce7';
+              e.target.style.borderColor = '#86efac';
+            }}
             onClick={() => setRole('user')}
           >
             User
           </button>
           <button
-            className="w-full bg-blue-100 hover:bg-blue-200 text-blue-800 font-semibold py-8 rounded-xl shadow-lg text-2xl transition duration-200 focus:outline-none border-2 border-blue-300 hover:border-blue-500"
+            style={{
+              width: '100%',
+              backgroundColor: '#dcfce7',
+              color: '#166534',
+              fontWeight: '600',
+              padding: '24px 16px',
+              borderRadius: '8px',
+              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+              fontSize: '1.25rem',
+              transition: 'all 0.2s',
+              border: '2px solid #86efac',
+              cursor: 'pointer'
+            }}
+            onMouseOver={(e) => {
+              e.target.style.backgroundColor = '#bbf7d0';
+              e.target.style.borderColor = '#22c55e';
+            }}
+            onMouseOut={(e) => {
+              e.target.style.backgroundColor = '#dcfce7';
+              e.target.style.borderColor = '#86efac';
+            }}
             onClick={() => setRole('vendor')}
           >
             Vendor
           </button>
           <button
-            className="w-full bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-semibold py-8 rounded-xl shadow-lg text-2xl transition duration-200 focus:outline-none border-2 border-yellow-300 hover:border-yellow-500"
+            style={{
+              width: '100%',
+              backgroundColor: '#dcfce7',
+              color: '#166534',
+              fontWeight: '600',
+              padding: '24px 16px',
+              borderRadius: '8px',
+              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+              fontSize: '1.25rem',
+              transition: 'all 0.2s',
+              border: '2px solid #86efac',
+              cursor: 'pointer'
+            }}
+            onMouseOver={(e) => {
+              e.target.style.backgroundColor = '#bbf7d0';
+              e.target.style.borderColor = '#22c55e';
+            }}
+            onMouseOut={(e) => {
+              e.target.style.backgroundColor = '#dcfce7';
+              e.target.style.borderColor = '#86efac';
+            }}
             onClick={() => setRole('admin')}
           >
             Admin
@@ -81,27 +161,86 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[300px]">
-      <form onSubmit={handleSubmit} className="bg-white p-8 rounded-lg shadow-md w-full max-w-sm">
-        <h2 className="text-2xl font-bold mb-6 text-center capitalize">{role} Login</h2>
-        <div className="mb-4">
-          <label className="block text-gray-700 mb-2" htmlFor="id">{getIdLabel()}</label>
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '250px'
+    }}>
+      <form onSubmit={handleSubmit} style={{
+        backgroundColor: 'white',
+        padding: '20px',
+        borderRadius: '8px',
+        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+        width: '100%',
+        maxWidth: '320px'
+      }}>
+        <h2 style={{
+          fontSize: '1.25rem',
+          fontWeight: 'bold',
+          marginBottom: '16px',
+          textAlign: 'center',
+          textTransform: 'capitalize'
+        }}>{role} Login</h2>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{
+            display: 'block',
+            color: '#374151',
+            marginBottom: '4px',
+            fontSize: '0.875rem'
+          }} htmlFor="id">{getIdLabel()}</label>
           <input
             id="id"
             type="text"
-            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
+            style={{
+              width: '100%',
+              padding: '6px 12px',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              outline: 'none',
+              fontSize: '0.875rem'
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = '#22c55e';
+              e.target.style.boxShadow = '0 0 0 3px rgba(34, 197, 94, 0.1)';
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = '#d1d5db';
+              e.target.style.boxShadow = 'none';
+            }}
             value={id}
             onChange={e => setId(e.target.value)}
             placeholder={getIdPlaceholder()}
             required
           />
         </div>
-        <div className="mb-6">
-          <label className="block text-gray-700 mb-2" htmlFor="password">Password</label>
+        <div style={{ marginBottom: '16px' }}>
+          <label style={{
+            display: 'block',
+            color: '#374151',
+            marginBottom: '4px',
+            fontSize: '0.875rem'
+          }} htmlFor="password">Password</label>
           <input
             id="password"
             type="password"
-            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
+            style={{
+              width: '100%',
+              padding: '6px 12px',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              outline: 'none',
+              fontSize: '0.875rem'
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = '#22c55e';
+              e.target.style.boxShadow = '0 0 0 3px rgba(34, 197, 94, 0.1)';
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = '#d1d5db';
+              e.target.style.boxShadow = 'none';
+            }}
             value={password}
             onChange={e => setPassword(e.target.value)}
             required
@@ -109,13 +248,35 @@ export default function LoginForm() {
         </div>
         <button
           type="submit"
-          className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200"
+          style={{
+            width: '100%',
+            backgroundColor: '#22c55e',
+            color: 'white',
+            fontWeight: '600',
+            padding: '8px 12px',
+            borderRadius: '6px',
+            border: 'none',
+            cursor: 'pointer',
+            transition: 'background-color 0.2s',
+            fontSize: '0.875rem'
+          }}
+          onMouseOver={(e) => {
+            if (!loading) e.target.style.backgroundColor = '#16a34a';
+          }}
+          onMouseOut={(e) => {
+            if (!loading) e.target.style.backgroundColor = '#22c55e';
+          }}
           disabled={loading}
         >
           {loading ? 'Signing In...' : 'Sign In'}
         </button>
         {message && (
-          <div className="mt-4 text-center text-sm text-gray-700">{message}</div>
+          <div style={{
+            marginTop: '12px',
+            textAlign: 'center',
+            fontSize: '0.75rem',
+            color: '#374151'
+          }}>{message}</div>
         )}
       </form>
     </div>
